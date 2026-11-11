@@ -1,0 +1,661 @@
+/* ============================================================
+   Telegram mini app — dark theme (black + dark grey + soft rose)
+   Visual polish (same features, text and behaviour):
+   - one spacing scale (--s-*) used across all views
+   - off-white text instead of pure white on pure black
+   - softer, less glaring rose
+   - flat cards: hairline borders only, shadows kept for the
+     floating layers (tab bar, drawer, toast) alone
+   - one clear primary action per view, consistent corner radii
+   Dead rules (search box, shortcut grid, old command rows,
+   typing dots, textarea, char count) are not carried over.
+   ============================================================ */
+:root {
+  color-scheme: dark;
+  /* Spacing scale — the single ruler for the whole app */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  /* shadcn tokens (HSL channels) — softened for eye comfort */
+  --background: 240 10% 4%;
+  --foreground: 0 0% 94%;
+  --card: 240 6% 9%;
+  --card-foreground: 0 0% 94%;
+  --popover: 240 10% 6%;
+  --popover-foreground: 0 0% 94%;
+  --primary: 340 62% 70%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 94%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 68%;
+  --accent-token: 240 3.7% 15.9%;
+  --destructive: 0 72% 62%;
+  --destructive-foreground: 0 0% 94%;
+  --border: 240 3.7% 15%;
+  --input: 240 3.7% 16.5%;
+  --ring: 340 62% 70%;
+  --radius: 0.75rem;
+  /* legacy aliases used across the app / inline styles */
+  --bg: hsl(var(--background));
+  --backdrop: #000000;
+  --panel: hsl(var(--card));
+  --panel-2: hsl(var(--card));
+  --field: hsl(var(--muted));
+  --text: hsl(var(--foreground));
+  --sub: hsl(var(--muted-foreground));
+  --accent: hsl(var(--primary));
+  --accent-deep: hsl(340 55% 58%);
+  --accent-soft: hsl(340 38% 16%);
+  --green: #4ade80;
+  --danger: hsl(var(--destructive));
+  --hairline: hsl(var(--border));
+  --bubble: hsl(var(--card));
+  --shadow: rgba(0, 0, 0, 0.4);
+}
+* { box-sizing: border-box; border-color: hsl(var(--border)); }
+html, body { margin: 0; padding: 0; }
+html { scroll-padding-bottom: 118px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, "Segoe UI", Tahoma, sans-serif;
+  background: #000;
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+::selection { background: hsl(var(--primary) / 0.35); }
+button, input, textarea, select { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; }
+/* shadcn focus-visible ring */
+button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+img { max-width: 100%; }
+
+.app {
+  max-width: 540px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: var(--tg-viewport-stable-height, 100dvh);
+  background: hsl(var(--background));
+  border-inline: 1px solid hsl(var(--border));
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ---------- App bar (shadcn header: bg/95 + backdrop-blur + border-b) ---------- */
+.appbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  min-height: calc(57px + env(safe-area-inset-top));
+  background: hsl(var(--background) / 0.92);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.appbar .bar-title {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Button · variant secondary · size sm */
+.close-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground));
+  border: 1px solid transparent; border-radius: calc(var(--radius) - 2px);
+  padding: 0 14px; height: 36px;
+  font-size: 14px; font-weight: 500; white-space: nowrap;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.close-pill:hover { background: hsl(240 3.7% 19%); }
+.close-pill:active { opacity: 0.85; }
+.close-pill svg { width: 12px; height: 12px; }
+/* Button · variant ghost */
+.back-btn {
+  display: none; align-items: center; justify-content: center; gap: 2px;
+  background: transparent; border: 0; border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--primary));
+  font-size: 15px; font-weight: 500; height: 36px; padding: 0 10px 0 12px;
+  transition: background 0.15s ease;
+}
+.back-btn:hover { background: hsl(var(--accent-token)); }
+.back-btn svg { width: 18px; height: 18px; }
+.appbar.in-sub .back-btn { display: inline-flex; }
+.appbar.in-sub .close-pill { display: none; }
+/* Avatar */
+.bar-avatar {
+  width: 32px; height: 32px; border-radius: 9999px;
+  object-fit: cover; flex: none;
+  box-shadow: 0 0 0 1px hsl(var(--border));
+}
+.bar-avatar-letter {
+  width: 32px; height: 32px; border-radius: 9999px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 15px; color: #fff; flex: none;
+}
+
+main { flex: 1; padding-bottom: 112px; }
+body.nav-sub main { padding-bottom: 40px; }
+.view { display: none; animation: fadein 0.18s ease; }
+.view.active { display: block; }
+@keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view { animation: none; } * { transition: none !important; } }
+
+/* ---------- Profile header ---------- */
+.profile { text-align: center; padding: 36px 24px 10px; }
+.profile .avatar-wrap { position: relative; width: 96px; height: 96px; margin: 0 auto 14px; }
+.profile img.avatar {
+  width: 96px; height: 96px; border-radius: 9999px; object-fit: cover; display: block;
+  box-shadow: 0 0 0 1px hsl(var(--border)), 0 4px 16px rgba(0,0,0,0.4);
+}
+.profile .avatar-letter {
+  width: 96px; height: 96px; border-radius: 9999px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 700; color: #fff;
+}
+.profile h1 {
+  font-family: "Noto Naskh Arabic", "IBM Plex Sans Arabic", serif;
+  font-size: clamp(22px, 5.4vw, 27px); font-weight: 700; line-height: 1.35;
+  letter-spacing: -0.01em; margin: 0 0 2px;
+}
+.profile .username { color: hsl(var(--primary)); font-size: 14px; font-weight: 500; direction: ltr; unicode-bidi: embed; }
+.profile .desc {
+  color: hsl(var(--muted-foreground));
+  font-size: 15px; line-height: 1.9; margin: 12px auto 0; max-width: 420px;
+}
+.spark-badge {
+  position: absolute; bottom: 0; inset-inline-start: 0;
+  width: 28px; height: 28px; border-radius: 9999px;
+  background: hsl(var(--primary)); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid hsl(var(--background));
+}
+.spark-badge svg { width: 15px; height: 15px; }
+
+/* ---------- Section headings (shadcn typography scale) ---------- */
+.section-title {
+  font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.4;
+  margin: 28px 18px 12px;
+}
+
+/* ---------- Card (shadcn Card) — flat: hairline border, no shadow ---------- */
+.status-card, .list-card, .form-card, .msg-card, .switch-row, .chat-card, .cap-card, .prompt-bubble {
+  background: hsl(var(--card)); color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 2px);
+}
+.status-card { margin: 24px 16px 6px; padding: 6px 16px; }
+.status-card .row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14.5px; line-height: 1.6; padding: 10px 0;
+}
+.status-card .row + .row { border-top: 1px solid hsl(var(--border)); }
+.status-card .k { font-weight: 500; color: hsl(var(--muted-foreground)); flex: none; font-size: 13.5px; }
+.status-card .v { color: hsl(var(--foreground)); display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin-inline-start: auto; text-align: end; min-width: 0; overflow-wrap: anywhere; }
+.status-card .v svg { width: 16px; height: 16px; color: var(--green); flex: none; }
+.status-card .v.off { color: hsl(var(--muted-foreground)); font-weight: 400; }
+
+/* ---------- List (Card + divide-y rows, hover accent) ---------- */
+.list-card { margin: 0 16px; overflow: hidden; padding: 0; }
+.list-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  background: transparent; border: 0; color: hsl(var(--foreground));
+  padding: 12px 14px; min-height: 58px; text-align: start;
+  transition: background 0.12s ease;
+}
+.list-row:hover { background: hsl(var(--accent-token) / 0.55); }
+.list-row + .list-row { border-top: 1px solid hsl(var(--border)); }
+.list-row .ic {
+  width: 38px; height: 38px; border-radius: calc(var(--radius) - 2px);
+  display: flex; align-items: center; justify-content: center; flex: none; color: #fff;
+}
+.list-row .ic svg { width: 19px; height: 19px; }
+.ic-blue { background: hsl(var(--primary)); }
+.ic-pink { background: hsl(240 4% 32%); }
+.ic-gold { background: hsl(240 4% 24%); }
+.ic-violet { background: hsl(240 4% 18%); }
+.ic-green { background: hsl(337 65% 48%); }
+.list-row .tt { flex: 1; min-width: 0; }
+.list-row .t1 { font-size: 15.5px; font-weight: 500; display: block; line-height: 1.45; }
+.list-row .t2 { font-size: 13px; color: hsl(var(--muted-foreground)); display: block; margin-top: 1px; line-height: 1.6; overflow-wrap: anywhere; }
+.list-row .chev { color: hsl(var(--muted-foreground)); flex: none; display: flex; }
+.list-row .chev svg { width: 17px; height: 17px; }
+/* Badge · variant default */
+.list-row .badge {
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+  font-size: 12px; font-weight: 600; line-height: 1;
+  border-radius: 9999px; min-width: 22px; height: 22px;
+  display: none; align-items: center; justify-content: center; padding: 0 7px; flex: none;
+}
+
+/* ---------- Sub views ---------- */
+.prompt-bubble { margin: 20px 16px 16px; padding: 14px 16px; font-size: 15px; line-height: 1.9; }
+.prompt-bubble code {
+  direction: ltr; unicode-bidi: embed;
+  background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+  padding: 1px 7px; border-radius: 6px; font-size: 13.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.form-card { margin: 0 16px 14px; padding: 16px; }
+/* Label */
+.field-label { font-size: 14px; font-weight: 500; color: hsl(var(--foreground)); display: block; margin-bottom: 8px; line-height: 1.5; }
+/* Input */
+.text-input {
+  display: flex; width: 100%;
+  background: transparent;
+  border: 1px solid hsl(var(--input));
+  border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--foreground));
+  font-size: 15px; padding: 9px 12px; min-height: 42px; height: auto;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.text-input::placeholder { color: hsl(var(--muted-foreground)); }
+.text-input:focus { border-color: hsl(var(--ring)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.22); outline: none; }
+/* Button · variant default · size lg — the one primary action per view */
+.save-btn {
+  display: flex; align-items: center; justify-content: center; width: calc(100% - 32px);
+  margin: 4px 16px 0;
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 2px); height: 44px; min-height: 44px;
+  font-size: 15px; font-weight: 500;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.save-btn:hover { background: hsl(340 62% 74%); }
+.save-btn:active { background: hsl(var(--accent-deep)); }
+/* Button · variant outline */
+.ghost-btn {
+  display: flex; align-items: center; justify-content: center; width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  background: transparent; color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--input));
+  border-radius: calc(var(--radius) - 2px); height: 42px; min-height: 42px;
+  font-size: 14.5px; font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ghost-btn:hover { background: hsl(var(--accent-token)); color: hsl(var(--foreground)); }
+/* Button · variant outline · destructive text */
+.danger-btn {
+  display: flex; align-items: center; justify-content: center; width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  background: transparent; color: hsl(var(--destructive));
+  border: 1px solid hsl(var(--input));
+  border-radius: calc(var(--radius) - 2px); height: 42px; min-height: 42px;
+  font-size: 14.5px; font-weight: 500;
+  transition: background 0.15s ease;
+}
+.danger-btn:hover { background: hsl(var(--destructive) / 0.1); }
+.hint { font-size: 13px; color: hsl(var(--muted-foreground)); line-height: 1.8; margin: 10px 20px 0; }
+.lock-note { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: hsl(var(--muted-foreground)); line-height: 1.8; margin: 12px 20px 0; }
+.lock-note svg { width: 15px; height: 15px; flex: none; margin-top: 4px; }
+
+/* Avatar picker */
+.pic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 16px; }
+.pic-opt {
+  border: 2px solid transparent; border-radius: 9999px;
+  padding: 0; background: transparent; aspect-ratio: 1; overflow: hidden; position: relative; min-height: 44px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pic-opt img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 9999px; }
+.pic-opt .letter-tile { width: 100%; height: 100%; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #fff; }
+.pic-opt.selected { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25); }
+.g1 { background: linear-gradient(135deg, #f07ba6, #d6336c); }
+.g2 { background: linear-gradient(135deg, #5a5a5e, #2c2c2e); }
+.g3 { background: linear-gradient(135deg, #8a4a63, #4d2436); }
+
+/* Chips (Badge / Toggle) */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground));
+  border: 1px solid transparent;
+  border-radius: 9999px; padding: 0 15px; height: 38px; min-height: 38px;
+  font-size: 14px; font-weight: 500; white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.chip:hover { background: hsl(240 3.7% 19%); }
+.chip.selected { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+
+/* Reminders / memory items */
+.item-list { margin: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.item-row {
+  display: flex; align-items: center; gap: 12px;
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  border-radius: var(--radius); padding: 12px 14px; min-height: 54px;
+}
+.item-row .body { flex: 1; min-width: 0; }
+.item-row .main-line { font-size: 15px; font-weight: 500; display: block; line-height: 1.5; overflow-wrap: anywhere; }
+.item-row .sub-line { font-size: 13px; color: hsl(var(--muted-foreground)); display: block; margin-top: 1px; }
+/* Button · variant secondary · size icon */
+.icon-btn {
+  background: hsl(var(--secondary)); border: 1px solid transparent; color: hsl(var(--muted-foreground));
+  width: 36px; height: 36px; border-radius: calc(var(--radius) - 4px);
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.icon-btn:hover { background: hsl(240 3.7% 19%); color: hsl(var(--foreground)); }
+.icon-btn svg { width: 16px; height: 16px; }
+.icon-btn.danger { color: hsl(var(--destructive)); }
+.icon-btn.danger:hover { background: hsl(var(--destructive) / 0.12); color: hsl(var(--destructive)); }
+.empty-state {
+  margin: 0 16px 14px;
+  border: 1px dashed hsl(var(--border));
+  border-radius: calc(var(--radius) + 2px);
+  padding: 24px 18px; text-align: center;
+  color: hsl(var(--muted-foreground)); font-size: 14px; line-height: 1.8;
+  background: hsl(var(--card) / 0.5);
+}
+
+/* Morning messages */
+.msg-card { margin: 0 16px 10px; padding: 14px 16px; }
+.msg-card .msg { font-size: 17px; font-weight: 600; line-height: 1.6; }
+.msg-card .when { font-size: 13px; color: hsl(var(--muted-foreground)); margin-top: 3px; display: block; }
+.switch-row { display: flex; align-items: center; gap: 12px; margin: 0 16px 12px; padding: 13px 16px; min-height: 58px; }
+.switch-row .lbl { flex: 1; font-size: 15px; font-weight: 500; line-height: 1.5; }
+.switch-row .lbl small { display: block; font-size: 13px; color: hsl(var(--muted-foreground)); font-weight: 400; margin-top: 1px; }
+/* Switch (Radix Switch) */
+.switch {
+  width: 44px; height: 24px; border-radius: 9999px;
+  background: hsl(var(--input)); border: 1px solid transparent; position: relative; flex: none;
+  transition: background 0.15s ease; padding: 0; cursor: pointer;
+}
+.switch::after {
+  content: ""; position: absolute; top: 2px; inset-inline-start: 2px;
+  width: 18px; height: 18px; border-radius: 9999px; background: hsl(var(--foreground));
+  transition: transform 0.15s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.35); pointer-events: none;
+}
+.switch[aria-checked="true"] { background: hsl(var(--primary)); }
+.switch[aria-checked="true"]::after { transform: translateX(-20px); background: #fff; }
+
+/* Study modes (Radio-card pattern) */
+.mode-cards { display: flex; flex-direction: column; gap: 10px; margin: 0 16px 14px; }
+.mode-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 2px); padding: 14px;
+  color: hsl(var(--foreground)); text-align: start; width: calc(100% - 32px); margin: 0 16px; min-height: 58px;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.mode-cards .mode-card { margin: 0; width: 100%; }
+.mode-card:hover { background: hsl(240 6% 9.5%); }
+.mode-card.selected { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); }
+.mode-card .ic { width: 40px; height: 40px; border-radius: calc(var(--radius) - 2px); flex: none; display: flex; align-items: center; justify-content: center; color: #fff; }
+.mode-card .ic svg { width: 20px; height: 20px; }
+.mode-card .t1 { font-size: 15.5px; font-weight: 600; display: block; line-height: 1.45; }
+.mode-card .t2 { font-size: 13px; color: hsl(var(--muted-foreground)); display: block; margin-top: 2px; line-height: 1.7; }
+
+/* Rules */
+.rule-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; }
+.rule-row + .rule-row { border-top: 1px solid hsl(var(--border)); }
+.rule-row svg { width: 20px; height: 20px; color: hsl(var(--destructive)); flex: none; margin-top: 3px; }
+.rule-row p { margin: 0; font-size: 14.5px; line-height: 1.85; }
+.about-text { white-space: pre-line; font-size: 14.5px; line-height: 1.95; margin: 0; }
+
+/* ---------- Chat ---------- */
+.chat-note {
+  margin: 16px 20px 12px; text-align: center;
+  font-size: 13px; line-height: 1.8; color: hsl(var(--muted-foreground));
+}
+.chat-card { margin: 0 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-row { display: flex; gap: 9px; align-items: flex-start; }
+.chat-row.user { justify-content: flex-end; }
+.spark { width: 26px; height: 26px; border-radius: 9999px; background: hsl(var(--primary)); color: #fff; flex: none; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.spark svg { width: 14px; height: 14px; }
+.chat-bubble {
+  background: hsl(var(--muted)); border: 1px solid hsl(var(--border) / 0.6);
+  border-radius: var(--radius); padding: 10px 13px;
+  font-size: 14.5px; line-height: 1.8; max-width: 86%;
+}
+.chat-row.user .chat-bubble { background: hsl(var(--accent-soft)); border-color: hsl(var(--primary) / 0.25); }
+.chat-form {
+  display: flex; gap: 6px; margin-top: 4px; align-items: center;
+  background: transparent; border: 1px solid hsl(var(--input));
+  border-radius: 9999px; padding: 5px;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.chat-form:focus-within { border-color: hsl(var(--ring)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.22); }
+.chat-form input {
+  flex: 1; min-width: 0; background: transparent; border: 0;
+  color: hsl(var(--foreground)); font-size: 15px; padding: 8px 12px; height: 40px; min-height: 40px;
+}
+.chat-form input::placeholder { color: hsl(var(--muted-foreground)); }
+.chat-form input:focus { outline: none; }
+.chat-form input:focus-visible { outline: none; }
+/* Button · variant default · size icon */
+.send-btn {
+  width: 40px; height: 40px; border-radius: 9999px; flex: none;
+  background: hsl(var(--primary)); color: #fff; border: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s ease;
+}
+.send-btn:hover { background: hsl(340 62% 74%); }
+.send-btn:active { background: hsl(var(--accent-deep)); }
+.send-btn svg { width: 18px; height: 18px; }
+
+/* Conversations list / open-conversation header */
+.item-row.clickable { cursor: pointer; }
+.item-row .chev { color: hsl(var(--muted-foreground)); flex: none; display: flex; }
+.item-row .chev svg { width: 17px; height: 17px; }
+.conv-head { display: flex; align-items: center; gap: 10px; margin: 16px 16px 12px; }
+.conv-head .tt { flex: 1; min-width: 0; }
+.conv-head .t1 { font-size: 16px; font-weight: 600; display: block; line-height: 1.45; overflow-wrap: anywhere; }
+.conv-head .t2 { font-size: 13px; color: hsl(var(--muted-foreground)); display: block; margin-top: 1px; line-height: 1.6; overflow-wrap: anywhere; }
+
+/* Shared-store link card */
+.form-card code {
+  direction: ltr; unicode-bidi: embed;
+  background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+  padding: 1px 7px; border-radius: 6px; font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.active-badge {
+  background: hsl(var(--primary)); color: #fff;
+  font-size: 11px; font-weight: 600; line-height: 1.5;
+  border-radius: 9999px; padding: 1px 8px; margin-inline-start: 7px;
+  vertical-align: middle; white-space: nowrap;
+}
+
+/* Capability cards */
+.cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; }
+.cap-card { padding: 14px; transition: border-color 0.15s ease, background 0.15s ease; }
+.cap-card:hover { border-color: hsl(240 3.7% 24%); background: hsl(240 6% 9.5%); }
+.cap-card .ic { width: 36px; height: 36px; border-radius: calc(var(--radius) - 2px); display: flex; align-items: center; justify-content: center; color: #fff; margin-bottom: 10px; }
+.cap-card .ic svg { width: 18px; height: 18px; }
+.cap-card .t1 { font-size: 15px; font-weight: 600; display: block; line-height: 1.45; }
+.cap-card .t2 { font-size: 13px; color: hsl(var(--muted-foreground)); line-height: 1.75; display: block; margin-top: 3px; }
+@media (max-width: 370px) { .cap-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Bottom tab bar (shadcn Tabs, fixed) ---------- */
+.tabbar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 540px;
+  background: hsl(var(--background) / 0.94);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid hsl(var(--border));
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  z-index: 40;
+}
+body.nav-sub .tabbar { display: none; }
+.tab-btn {
+  background: transparent; border: 0; border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--muted-foreground));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 12px; font-weight: 500; min-height: 52px; padding: 6px 2px 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab-btn svg { width: 22px; height: 22px; }
+.tab-btn:hover { color: hsl(var(--foreground)); }
+.tab-btn.active { color: hsl(var(--primary)); font-weight: 600; background: hsl(var(--primary) / 0.1); }
+
+/* ---------- Side drawer (conversations only) ---------- */
+.menu-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; border-radius: calc(var(--radius) - 2px);
+  color: hsl(var(--foreground)); width: 36px; height: 36px; flex: none; padding: 0;
+  transition: background 0.15s ease;
+}
+.menu-btn:hover { background: hsl(var(--accent-token)); }
+.menu-btn svg { width: 20px; height: 20px; }
+.drawer-scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 60;
+}
+.drawer-scrim.show { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; top: 0; bottom: 0; inset-inline-start: 0;
+  width: min(86vw, 340px);
+  background: hsl(var(--popover)); color: hsl(var(--popover-foreground));
+  border-inline-end: 1px solid hsl(var(--border));
+  z-index: 61; transform: translateX(105%);
+  transition: transform 0.22s ease;
+  display: flex; flex-direction: column;
+  box-shadow: 0 0 40px rgba(0,0,0,0.5);
+}
+.drawer.open { transform: none; }
+.drawer-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  min-height: calc(57px + env(safe-area-inset-top)); flex: none;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.drawer-title { font-size: 16px; font-weight: 600; flex: 1; }
+.drawer-body {
+  overflow-y: auto; padding: 16px; flex: 1;
+  display: flex; flex-direction: column; gap: 12px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+.drawer .form-card { margin: 0; }
+.drawer .save-btn { width: 100%; margin: 0; }
+.drawer .item-list, .drawer .empty-state, .drawer .list-card { margin: 0; }
+.drawer-sub { font-size: 14px; font-weight: 600; margin: 8px 0 0; color: hsl(var(--foreground)); }
+/* Pinned drawer footer: the body scrolls above it, the footer stays put. */
+.drawer-foot {
+  flex: none;
+  border-top: 1px solid hsl(var(--border));
+  padding: var(--s-2) var(--s-4);
+  padding-bottom: calc(var(--s-2) + env(safe-area-inset-bottom));
+}
+/* Clear «مساحتي» button — a full-width primary action with its tagline. */
+.drawer-space-btn {
+  display: flex; align-items: center; gap: var(--s-3); width: 100%;
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+  border: 0; border-radius: calc(var(--radius) - 2px);
+  padding: var(--s-3) var(--s-4); text-align: start;
+  transition: background 0.15s ease;
+}
+.drawer-space-btn:hover { background: hsl(340 62% 74%); }
+.drawer-space-btn:active { background: hsl(var(--accent-deep)); }
+.drawer-space-btn svg { width: 20px; height: 20px; flex: none; }
+.drawer-space-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.drawer-space-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.drawer-space-desc { font-size: 12px; font-weight: 400; line-height: 1.4; color: hsl(var(--primary-foreground) / 0.8); }
+.item-row.conv-active { border-color: hsl(var(--primary)); background: hsl(var(--accent-soft)); }
+
+/* Toast (Sonner-style) */
+.toast {
+  position: fixed; bottom: 104px; left: 50%; transform: translate(-50%, 12px);
+  background: hsl(var(--popover)); color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  font-size: 14px; font-weight: 500; line-height: 1.5;
+  padding: 11px 18px; border-radius: var(--radius);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 50; max-width: calc(100vw - 40px); text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.item-row .main-line, .list-row .t1 { overflow-wrap: anywhere; }
+.hidden { display: none !important; }
+
+/* ---------- Responsive: large screens ---------- */
+@media (min-width: 720px) {
+  .app { max-width: 680px; }
+  .tabbar { max-width: 680px; }
+  .cap-grid { grid-template-columns: repeat(3, 1fr); }
+  .pic-grid { grid-template-columns: repeat(4, 1fr); }
+  .profile { padding-top: 40px; }
+  .profile .avatar-wrap { width: 112px; height: 112px; }
+  .profile img.avatar, .profile .avatar-letter { width: 112px; height: 112px; }
+  .profile .avatar-letter { font-size: 48px; }
+}
+@media (min-width: 1100px) {
+  .app { max-width: 760px; }
+  .tabbar { max-width: 760px; }
+}
+/* ---------- Responsive: small screens ---------- */
+@media (max-width: 400px) {
+  .appbar { padding: 10px 12px; }
+  .status-card, .list-card, .form-card, .msg-card, .switch-row,
+  .chat-card, .item-list, .mode-cards, .empty-state, .conv-head { margin-inline: 12px; }
+  .mode-card { width: calc(100% - 24px); margin-inline: 12px; }
+  .mode-cards .mode-card { width: 100%; margin: 0; }
+  .save-btn, .ghost-btn, .danger-btn { width: calc(100% - 24px); margin-inline: 12px; }
+  .cap-grid, .pic-grid { padding-inline: 12px; }
+  .section-title { margin-inline: 14px; }
+  .prompt-bubble { margin: 14px 12px 12px; }
+  .hint, .lock-note { margin-inline: 16px; }
+  .profile { padding: 24px 16px 4px; }
+  .profile .avatar-wrap { width: 84px; height: 84px; }
+  .profile img.avatar, .profile .avatar-letter { width: 84px; height: 84px; }
+  .profile .avatar-letter { font-size: 36px; }
+  .chat-bubble { max-width: 90%; }
+  .tab-btn { font-size: 11.5px; min-height: 50px; }
+  .tab-btn svg { width: 21px; height: 21px; }
+  .list-row { padding: 11px 12px; gap: 11px; }
+}
+@media (max-width: 340px) {
+  .pic-grid { gap: 8px; }
+  .close-pill { padding: 0 12px; }
+}
+
+/* ---------- Compatibility pass: touch, keyboard & odd viewports ---------- */
+/* iOS Safari / Telegram WebView zooms the page when a focused field is
+   under 16px — keep fields at 16px on phone widths so tapping an input
+   never shifts the layout. */
+@media (max-width: 720px) {
+  .text-input, .chat-form input { font-size: 16px; }
+}
+/* Long tab label («المحادثة الرئيسية») must never squeeze its neighbours. */
+.tab-btn span { line-height: 1.3; text-align: center; overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+  .tab-btn { font-size: 11px; gap: 2px; padding-inline: 1px; }
+}
+/* Short landscape viewports (phones on their side): compact chrome so
+   the content — not the bars — gets the height. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .appbar { min-height: calc(48px + env(safe-area-inset-top)); padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 6px; }
+  .profile { padding: 14px 24px 2px; }
+  .profile .avatar-wrap { width: 60px; height: 60px; margin-bottom: 8px; }
+  .profile img.avatar, .profile .avatar-letter { width: 60px; height: 60px; }
+  .profile .avatar-letter { font-size: 26px; }
+  .profile .desc { margin-top: 6px; line-height: 1.7; }
+  .section-title { margin-top: 18px; }
+  .tab-btn { min-height: 44px; padding-top: 4px; }
+  .tab-btn svg { width: 19px; height: 19px; }
+  main { padding-bottom: 84px; }
+  .toast { bottom: 76px; }
+}
+/* Toast sits above the tab bar on tab views; on sub views the bar is
+   hidden, so it can rest lower. */
+body.nav-sub .toast { bottom: 28px; }
+/* Drawer reading column on roomier screens + a slim scrollbar. */
+@media (min-width: 720px) { .drawer { width: 360px; } }
+.drawer-body { scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
+.drawer-body::-webkit-scrollbar { width: 5px; }
+.drawer-body::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
+/* Desktop: on very wide monitors the app column lifts off the
+   pure-black page behind it. */
+@media (min-width: 1400px) {
+  body { background: hsl(240 9% 5.5%); }
+  .app { box-shadow: 0 0 60px rgba(0, 0, 0, 0.55); }
+}
